@@ -52,7 +52,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			}
 			if (isspace(next)) {
 				str += now;
-				std::cout << str <<  "|ALPHANUM\n";
+				//std::cout << str <<  "|ALPHANUM\n";
 				token.str = str;
 				token.type = ALPHANUM;
 				str = "";
@@ -62,7 +62,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			}
 			if (isSymbolMult(next)) {
 				str += now;
-				std::cout << str <<  "|ALPHANUM\n";
+				//std::cout << str <<  "|ALPHANUM\n";
 				token.str = str;
 				token.type = ALPHANUM;
 				str = "";
@@ -72,7 +72,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			}
 			if (isSymbolOne(next)) {
 				str += now;
-				std::cout << str <<  "|ALPHANUM\n";
+				//std::cout << str <<  "|ALPHANUM\n";
 				token.str = str;
 				token.type = ALPHANUM;
 				str = "";
@@ -83,7 +83,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (next == '\'') {
 				state = STRING;
 				str += now;
-				std::cout << str << "|ALPHANUM\n";
+				//std::cout << str << "|ALPHANUM\n";
 				token.str = str;
 				token.type = ALPHANUM;
 				str = "";
@@ -132,7 +132,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			}
 			if (isspace(next)) {
 				str += now;
-				std::cout << str << "|INTEGER\n";
+				//std::cout << str << "|INTEGER\n";
 				token.str = str;
 				token.type = INTEGER;
 				str = "";
@@ -142,7 +142,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			}
 			if (isSymbolMult(next)) {
 				str += now;
-				std::cout << str << "|INTEGER\n";
+				//std::cout << str << "|INTEGER\n";
 				token.str = str;
 				token.type = INTEGER;
 				str = "";
@@ -152,7 +152,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			}
 			if (isSymbolOne(next)) {
 				str += now;
-				std::cout << str << "|INTEGER\n";
+				//std::cout << str << "|INTEGER\n";
 				token.str = str;
 				token.type = INTEGER;
 				str = "";
@@ -163,7 +163,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (next == '\'') {
 				state = STRING;
 				str += now;
-				std::cout << str << "|INTEGER\n";
+				//std::cout << str << "|INTEGER\n";
 				token.str = str;
 				token.type = INTEGER;
 				str = "";
@@ -180,7 +180,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isSymbolOne(next)) {
 				state = SYMBOL_ONE;
 				str += now;
-				std::cout << str << "|SYMBOL_MULT\n";
+				//std::cout << str << "|SYMBOL_MULT\n";
 				token.str = str;
 				token.type = SYMBOL_MULT;
 
@@ -191,7 +191,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isdigit(next)) {
 				state = INTEGER;
 				str += now;
-				std::cout << str << "|SYMBOL_MULT\n";
+				//std::cout << str << "|SYMBOL_MULT\n";
 				token.str = str;
 				token.type = SYMBOL_MULT;
 				str = "";
@@ -201,7 +201,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isalpha(next)) {
 				state = ALPHANUM;
 				str += now;
-				std::cout << str << "|SYMBOL_MULT\n";
+				//std::cout << str << "|SYMBOL_MULT\n";
 				token.str = str;
 				token.type = SYMBOL_MULT;
 				str = "";
@@ -211,7 +211,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isspace(next)) {
 				state = INIT;
 				str += now;
-				std::cout << str << "|SYMBOL_MULT\n";
+				//std::cout << str << "|SYMBOL_MULT\n";
 				token.str = str;
 				token.type = SYMBOL_MULT;
 				str = "";
@@ -221,7 +221,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (next == '\'') {
 				state = STRING;
 				str += now;
-				std::cout << str << "|SYMBOL_MULT\n";
+				//std::cout << str << "|SYMBOL_MULT\n";
 				token.str = str;
 				token.type = SYMBOL_MULT;
 				str = "";
@@ -233,7 +233,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isdigit(next)) {
 				state = INTEGER;
 				str += now;
-				std::cout << str << "|SYMBOL_ONE\n";
+				//std::cout << str << "|SYMBOL_ONE\n";
 				token.str = str;
 				token.type = SYMBOL_ONE;
 				str = "";
@@ -243,7 +243,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isalpha(next)) {
 				state = ALPHANUM;
 				str += now;
-				std::cout << str << "|SYMBOL_ONE\n";
+				//std::cout << str << "|SYMBOL_ONE\n";
 				token.str = str;
 				token.type = SYMBOL_ONE;
 				str = "";
@@ -253,7 +253,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isspace(next)) {
 				state = INIT;
 				str += now;
-				std::cout << str << "|SYMBOL_ONE\n";
+				//std::cout << str << "|SYMBOL_ONE\n";
 				token.str = str;
 				token.type = SYMBOL_ONE;
 				str = "";
@@ -263,7 +263,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isSymbolMult(next)) {
 				state = SYMBOL_MULT;
 				str += now;
-				std::cout << str << "|SYMBOL_ONE\n";
+				//std::cout << str << "|SYMBOL_ONE\n";
 				token.str = str;
 				token.type = SYMBOL_ONE;
 				str = "";
@@ -273,7 +273,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (isSymbolOne(next)) {
 				state = SYMBOL_ONE;
 				str += now;
-				std::cout << str << "|SYMBOL_ONE\n";
+				//std::cout << str << "|SYMBOL_ONE\n";
 				token.str = str;
 				token.type = SYMBOL_ONE;
 				str = "";
@@ -283,7 +283,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 			if (next == '\'') {
 				state = STRING;
 				str += now;
-				std::cout << str << "|SYMBOL_ONE\n";
+				//std::cout << str << "|SYMBOL_ONE\n";
 				token.str = str;
 				token.type = SYMBOL_ONE;
 				str = "";
@@ -297,7 +297,7 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 				state = INIT;
 				str += now;
 				str += "\'";
-				std::cout << str << "|STRING\n";
+				//std::cout << str << "|STRING\n";
 				token.str = str;
 				token.type = STRING;
 				str = "";
@@ -322,7 +322,7 @@ int main(int argc,char *argv[]) {
 		std::cout << "Wrong number of arguments\n";
 		return 1;
 	}
-	std::ifstream file(argv[1]);	
+	std::ifstream file(argv[1]);
 	if (!file) {
 		std::cout << "Unable to open file\n";
 		return 1;
@@ -345,16 +345,18 @@ int main(int argc,char *argv[]) {
 	else if (isSymbolOne(next))
 		state = SYMBOL_ONE;
 
-	for (;;) {	
+	for (;;) {
 		auto t = getToken(file);
 		if (!t) {
 			if (t.error() == 0)
-				break;
+				std::cout << "END OF TOKENS\n";
 			else if (t.error() == 1) {
-				std::cout << "Error\n";
+				std::cout << "LEXER ERROR\n";
 			}
+			break;
 		}
-		std::cout << t.str << "\n";
+		Token token = *t;
+		std::cout << token.str << " " << token.type << "\n";
 	}
 
 	file.close();
