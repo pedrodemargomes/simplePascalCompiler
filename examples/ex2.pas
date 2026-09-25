@@ -6,9 +6,9 @@ begin
 	a := 11 - 22;
 	b := 2 + a;
 	b := 11112 * a;
-	b := a / b;
-	a := 12 > 2;
-	a := a < 4;
-	b    :=		b <> 123; 
-	b    :=		b = 321; 
+	if a > 1 then
+	begin
+		a := 3;
+	end;
+	b := 1112 * b;
 end.
