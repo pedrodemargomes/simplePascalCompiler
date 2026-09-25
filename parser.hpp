@@ -1,5 +1,11 @@
+#ifndef PARSER_H
+#define PARSER_H
+
+#include <memory>
+#include <vector>
+
 enum VarType {
-	INTEGER
+	INT
 	// TODO: Add other types
 };
 
@@ -22,6 +28,12 @@ enum Operation {
 	LESS
 };
 
+class ProgramAST;
+class CodeBlockAST;
+class AttributionAST;
+class ConditionalAST;
+class ExpressionAST;
+
 class AST {
 	public:
 	std::unique_ptr<ProgramAST> program;
@@ -39,16 +51,16 @@ class ProgramAST {
 	std::unique_ptr<CodeBlockAST> codeBlock;
 };
 
-class CodeBlockAST {
-	public:
-	std::vector<StatementAST> statements;
-};
-
 class StatementAST {
 	public:
 	enum StatementType type;
 	std::unique_ptr<AttributionAST> attribution;
-	std::unique_ptr<ConditionalAST> conditional;	
+	std::unique_ptr<ConditionalAST> conditional;
+};
+
+class CodeBlockAST {
+	public:
+	std::vector<StatementAST> statements;
 };
 
 class AttributionAST {
@@ -65,7 +77,7 @@ class ExpressionAST {
 	std::unique_ptr<ExpressionAST> expressionRight;
 	std::string var;
 	int intLiteral;
-		
+
 };
 
 class ConditionalAST {
@@ -73,5 +85,9 @@ class ConditionalAST {
 	std::unique_ptr<ExpressionAST> condition;
 	std::unique_ptr<CodeBlockAST> ifCodeBlock;
 	std::unique_ptr<CodeBlockAST> elseCodeBlock;
-			
+
 };
+
+std::unique_ptr<ProgramAST> parseProgram();
+
+#endif

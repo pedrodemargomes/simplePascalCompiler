@@ -3,15 +3,8 @@
 #include <cctype>
 #include <cstring>
 #include <expected>
-
-enum State {
-	INIT,
-	ALPHANUM,
-	STRING,
-	INTEGER,
-	SYMBOL_ONE,
-	SYMBOL_MULT
-};
+#include "lexer.hpp"
+#include "parser.hpp"
 
 bool isSymbolMult(char c) {
 	if (strchr(":=<>", c))
@@ -25,22 +18,19 @@ bool isSymbolOne(char c) {
 	return false;
 }
 
-struct Token {
-	enum State type;
-	std::string str;
-};
-
 // Global lexer variables
+std::ifstream file;
 enum State state;
 char now, next;
 std::string str;
 // Return 0 at EOF and 1 when error;
-std::expected<struct Token, int> getToken(std::ifstream &file) {
+struct Token getToken() {
 	struct Token token;
 	for (;;) {
 		now = next;
 		if (!file.get(next)) {
-			return std::unexpected(0); // End
+			token.type = END;
+			return token;
 		}
 		//std::cout << "now: " << std::hex << (int) now << " next: " << std::hex << (int) next << " state: " << state << "\n";
 		// Logic here
@@ -314,7 +304,8 @@ std::expected<struct Token, int> getToken(std::ifstream &file) {
 out:
 	return token;
 end:
-	return std::unexpected(1);
+	token.type = ERROR;
+	return token;
 }
 
 int main(int argc,char *argv[]) {
@@ -322,7 +313,7 @@ int main(int argc,char *argv[]) {
 		std::cout << "Wrong number of arguments\n";
 		return 1;
 	}
-	std::ifstream file(argv[1]);
+	file.open(argv[1]);
 	if (!file) {
 		std::cout << "Unable to open file\n";
 		return 1;
@@ -345,8 +336,15 @@ int main(int argc,char *argv[]) {
 	else if (isSymbolOne(next))
 		state = SYMBOL_ONE;
 
+	// Build AST
+	AST ast;
+	ast.program = parseProgram();
+
+
+
+	/*
 	for (;;) {
-		auto t = getToken(file);
+		auto t = getToken();
 		if (!t) {
 			if (t.error() == 0)
 				std::cout << "END OF TOKENS\n";
@@ -357,7 +355,10 @@ int main(int argc,char *argv[]) {
 		}
 		Token token = *t;
 		std::cout << token.str << " " << token.type << "\n";
+
+
 	}
+	*/
 
 	file.close();
 
