@@ -115,6 +115,17 @@ bool isTokenLess(struct Token &token) {
 	return false;
 }
 
+bool isTokenEqu(struct Token &token) {
+	if (token.type == SYMBOL_MULT)
+		return icompare(token.str, "=");
+	return false;
+}
+
+bool isTokenDiff(struct Token &token) {
+	if (token.type == SYMBOL_MULT)
+		return icompare(token.str, "<>");
+	return false;
+}
 bool isTokenDot(struct Token &token) {
 	if (token.type == SYMBOL_ONE)
 		return icompare(token.str, ".");
@@ -134,9 +145,10 @@ bool isTokenCloseParenthesis(struct Token &token) {
 }
 
 bool isTokenBinaryOperation(struct Token &token) {
-	if (token.type == SYMBOL_ONE)
-		if (strchr("-+*/", token.str[0]))
-			return true;
+	if (token.type == SYMBOL_ONE && strchr("-+*/", token.str[0]))
+		return true;
+	if (isTokenGreater(token) || isTokenLess(token) || isTokenEqu(token) || isTokenDiff(token))
+		return true;
 	return false;
 }
 

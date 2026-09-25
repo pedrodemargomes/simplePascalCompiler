@@ -3,6 +3,7 @@
 #include <iostream>
 #include <expected>
 #include <utility>
+#include <functional>
 
 extern struct Token getToken();
 struct Token token;
@@ -50,7 +51,7 @@ err:
 
 }
 
-ExpressionAST parseExpression() {
+ExpressionAST parseExpression(std::function<bool(struct Token &)> endExpr) {
 	ExpressionAST expr;
 
 	// Parse only simple expression: Var/integer OP var/integer
@@ -68,7 +69,7 @@ ExpressionAST parseExpression() {
 	}
 
 	token = getToken();
-	if (isTokenSemicolon(token))
+	if (endExpr(token))
 		return expr;
 
 	if (!isTokenBinaryOperation(token))
@@ -82,6 +83,14 @@ ExpressionAST parseExpression() {
 		expr.operation = MUL;
 	else if (isTokenDiv(token))
 		expr.operation = DIV;
+	else if (isTokenDiff(token))
+		expr.operation = DIFF;
+	else if (isTokenEqu(token))
+		expr.operation = EQUAL;
+	else if (isTokenGreater(token))
+		expr.operation = GREATER;
+	else if (isTokenLess(token))
+		expr.operation = LESS;
 
 	expr.expressionRight = std::make_unique<ExpressionAST>();
 
@@ -95,49 +104,16 @@ ExpressionAST parseExpression() {
 	}
 
 	token = getToken();
-	if (!isTokenSemicolon(token))
+	if (!endExpr(token))
 		goto err;
 
 	return expr;
 
 err:
-	std::cout << "Parser error at token:\n";
+	std::cout << "Parser error in ParseExpression at token:\n";
 	std::cout << token.str << " " << token.type << "\n";
 
 	return expr;
-}
-
-StatementAST parseStatement() {
-	StatementAST statementAST;
-
-	if (token.type == ALPHANUM) {
-		// If
-		if (isTokenIf(token)) {
-		
-		} else {
-			// Attribution
-			if (isTokenAlphaNumReserved(token))
-				goto err;
-			
-			std::string varName = token.str;
-
-			token = getToken();
-			if (!isTokenAttribution(token))
-				goto err;
-			
-			statementAST.attribution = std::make_unique<AttributionAST>();
-			statementAST.attribution->var = varName;
-			statementAST.attribution->expression = parseExpression();
-		}	
-	} else
-		goto err;	
-		
-	return statementAST;
-err:
-	std::cout << "Parser error at token:\n";
-	std::cout << token.str << " " << token.type << "\n";
-
-	return statementAST;
 }
 
 std::unique_ptr<CodeBlockAST> parseCodeBlock() {
@@ -159,6 +135,56 @@ err:
 	std::cout << "Parser error at token:\n";
 	std::cout << token.str << " " << token.type << "\n";
 	return codeBlockAST;
+}
+
+StatementAST parseStatement() {
+	StatementAST statementAST;
+
+	if (token.type == ALPHANUM) {
+		// If - else
+		if (isTokenIf(token)) {
+			statementAST.conditional = std::make_unique<ConditionalAST>();
+			statementAST.conditional->condition = parseExpression(isTokenThen);
+
+			if (!isTokenThen(token))
+				goto err;
+
+			token = getToken(); // Consume then
+			statementAST.conditional->ifCodeBlock = parseCodeBlock();
+			token = getToken(); // Consume end
+
+			if (isTokenSemicolon(token))
+				goto out;
+
+			if (!isTokenElse(token))
+				goto err;
+
+			statementAST.conditional->elseCodeBlock = parseCodeBlock();
+		} else {
+			// Attribution
+			if (isTokenAlphaNumReserved(token))
+				goto err;
+			
+			std::string varName = token.str;
+
+			token = getToken();
+			if (!isTokenAttribution(token))
+				goto err;
+			
+			statementAST.attribution = std::make_unique<AttributionAST>();
+			statementAST.attribution->var = varName;
+			statementAST.attribution->expression = parseExpression(isTokenSemicolon);
+		}	
+	} else
+		goto err;	
+
+out:
+	return statementAST;
+err:
+	std::cout << "Parser error at token:\n";
+	std::cout << token.str << " " << token.type << "\n";
+
+	return statementAST;
 }
 
 std::unique_ptr<ProgramAST> parseProgram() {

@@ -35,6 +35,7 @@ class CodeBlockAST;
 class AttributionAST;
 class ConditionalAST;
 class ExpressionAST;
+class StatementAST;
 
 class ExpressionAST {
 	public:
@@ -66,6 +67,14 @@ class ExpressionAST {
 			std::cout << " * ";
 		else if (operation == DIV)
 			std::cout << " / ";
+		else if (operation == LESS)
+			std::cout << " < ";
+		else if (operation == GREATER)
+			std::cout << " > ";
+		else if (operation == DIFF)
+			std::cout << " <> ";
+		else if (operation == EQUAL)
+			std::cout << " = ";
 		else
 			std::cout << " UNKNOWN OPERATION ";
 		// Print expressionRight
@@ -87,14 +96,6 @@ class AttributionAST {
 	}
 };
 
-class ConditionalAST {
-	public:
-	std::unique_ptr<ExpressionAST> condition;
-	std::unique_ptr<CodeBlockAST> ifCodeBlock;
-	std::unique_ptr<CodeBlockAST> elseCodeBlock;
-
-};
-
 class StatementAST {
 	public:
 	enum StatementType type;
@@ -103,6 +104,8 @@ class StatementAST {
 	void print() {
 		if (attribution)
 			attribution->print();
+		if (conditional)
+			conditional->print();
 	}
 };
 
@@ -113,6 +116,19 @@ class CodeBlockAST {
 		for (auto &it : statements) {
 			it.print();
 		}
+	}
+};
+
+class ConditionalAST {
+	public:
+	ExpressionAST condition;
+	std::unique_ptr<CodeBlockAST> ifCodeBlock;
+	std::unique_ptr<CodeBlockAST> elseCodeBlock;
+	void print() {
+		std::cout << "IF ";
+		condition.print();
+		std::cout << " THEN\n";
+		ifCodeBlock->print();
 	}
 };
 
@@ -143,5 +159,14 @@ class ProgramAST {
 };
 
 std::unique_ptr<ProgramAST> parseProgram();
+std::vector<VariablesAST> parseVars();
+ExpressionAST parseExpression();
+std::unique_ptr<CodeBlockAST> parseCodeBlock();
+StatementAST parseStatement();
+std::unique_ptr<ProgramAST> parseProgram();
+
+
+
+
 
 #endif
