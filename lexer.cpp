@@ -6,6 +6,164 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 
+bool icompare_pred(unsigned char a, unsigned char b)
+{
+    return std::tolower(a) == std::tolower(b);
+}
+
+bool icompare(std::string const& a, std::string const& b)
+{
+    if (a.length() == b.length()) {
+        return std::equal(b.begin(), b.end(),
+                           a.begin(), icompare_pred);
+    }
+    else {
+        return false;
+    }
+}
+
+bool isTokenProgram(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "program");
+	return false;
+}
+
+bool isTokenVar(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "var");
+	return false;
+}
+
+bool isTokenInteger(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "integer");
+	return false;
+}
+
+bool isTokenBegin(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "begin");
+	return false;
+}
+
+bool isTokenEnd(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "end");
+	return false;
+}
+
+bool isTokenIf(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "if");
+	return false;
+}
+
+bool isTokenElse(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "else");
+	return false;
+}
+
+bool isTokenThen(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "then");
+	return false;
+}
+
+bool isTokenAlphaNumReserved(struct Token &token) {
+	if (isTokenProgram(token) || isTokenVar(token) || isTokenInteger(token) || isTokenBegin(token) || isTokenEnd(token) || isTokenIf(token) || isTokenElse(token) || isTokenThen(token))
+		return true;
+	return false;
+}
+
+bool isTokenNotAlphaNumOrReserved(struct Token &token) {
+	// If not alphanum return true to get an error
+	if (token.type != ALPHANUM)
+		return true;
+	if (isTokenProgram(token) || isTokenVar(token) || isTokenInteger(token) || isTokenBegin(token) || isTokenEnd(token) || isTokenIf(token) || isTokenElse(token) || isTokenThen(token))
+		return true;
+	return false;
+}
+
+bool isTokenSemicolon(struct Token &token) {
+	if (token.type == SYMBOL_ONE)
+		return icompare(token.str, ";");
+	return false;
+}
+
+bool isTokenColon(struct Token &token) {
+	if (token.type == SYMBOL_MULT)
+		return icompare(token.str, ":");
+	return false;
+}
+
+bool isTokenAttribution(struct Token &token) {
+	if (token.type == SYMBOL_MULT)
+		return icompare(token.str, ":=");
+	return false;
+}
+
+bool isTokenGreater(struct Token &token) {
+	if (token.type == SYMBOL_MULT)
+		return icompare(token.str, ">");
+	return false;
+}
+
+bool isTokenLess(struct Token &token) {
+	if (token.type == SYMBOL_MULT)
+		return icompare(token.str, "<");
+	return false;
+}
+
+bool isTokenDot(struct Token &token) {
+	if (token.type == SYMBOL_ONE)
+		return icompare(token.str, ".");
+	return false;
+}
+
+bool isTokenOpenParenthesis(struct Token &token) {
+	if (token.type == SYMBOL_ONE)
+		return icompare(token.str, "(");
+	return false;
+}
+
+bool isTokenCloseParenthesis(struct Token &token) {
+	if (token.type == SYMBOL_ONE)
+		return icompare(token.str, ")");
+	return false;
+}
+
+bool isTokenBinaryOperation(struct Token &token) {
+	if (token.type == SYMBOL_ONE)
+		if (strchr("-+*/", token.str[0]))
+			return true;
+	return false;
+}
+
+bool isTokenPlus(struct Token &token) {
+	if (token.type == SYMBOL_ONE && token.str[0] == '+')
+		return true;
+	return false;
+}
+
+bool isTokenMinus(struct Token &token) {
+	if (token.type == SYMBOL_ONE && token.str[0] == '-')
+		return true;
+	return false;
+}
+
+bool isTokenMult(struct Token &token) {
+	if (token.type == SYMBOL_ONE && token.str[0] == '*')
+		return true;
+	return false;
+}
+
+bool isTokenDiv(struct Token &token) {
+	if (token.type == SYMBOL_ONE && token.str[0] == '/')
+		return true;
+	return false;
+}
+
 bool isSymbolMult(char c) {
 	if (strchr(":=<>", c))
 		return true;
@@ -29,7 +187,7 @@ struct Token getToken() {
 	for (;;) {
 		now = next;
 		if (!file.get(next)) {
-			token.type = END;
+			token.type = END_OF_FILE;
 			return token;
 		}
 		//std::cout << "now: " << std::hex << (int) now << " next: " << std::hex << (int) next << " state: " << state << "\n";
@@ -339,8 +497,6 @@ int main(int argc,char *argv[]) {
 	// Build AST
 	AST ast;
 	ast.program = parseProgram();
-
-
 
 	/*
 	for (;;) {
