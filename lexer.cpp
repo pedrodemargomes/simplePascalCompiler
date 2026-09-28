@@ -5,6 +5,7 @@
 #include <expected>
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "codeGenVisitor.hpp"
 
 bool icompare_pred(unsigned char a, unsigned char b)
 {
@@ -526,23 +527,10 @@ int main(int argc,char *argv[]) {
 	AST ast;
 	ast.program = parseProgram();
 
-	/*
-	for (;;) {
-		auto t = getToken();
-		if (!t) {
-			if (t.error() == 0)
-				std::cout << "END OF TOKENS\n";
-			else if (t.error() == 1) {
-				std::cout << "LEXER ERROR\n";
-			}
-			break;
-		}
-		Token token = *t;
-		std::cout << token.str << " " << token.type << "\n";
 
-
-	}
-	*/
+	// Generate LLVM IR code
+	CodeGenVisitor cgv;
+	cgv.visit(*ast.program);
 
 	file.close();
 
