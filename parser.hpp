@@ -31,11 +31,9 @@ enum Operation {
 };
 
 class ProgramAST;
-class CodeBlockAST;
 class AttributionAST;
 class ConditionalAST;
 class ExpressionAST;
-class StatementAST;
 
 class ExpressionAST {
 	public:
@@ -101,12 +99,7 @@ class StatementAST {
 	enum StatementType type;
 	std::unique_ptr<AttributionAST> attribution;
 	std::unique_ptr<ConditionalAST> conditional;
-	void print() {
-		if (attribution)
-			attribution->print();
-		if (conditional)
-			conditional->print();
-	}
+	void print();
 };
 
 class CodeBlockAST {
@@ -127,8 +120,15 @@ class ConditionalAST {
 	void print() {
 		std::cout << "IF ";
 		condition.print();
-		std::cout << " THEN\n";
+		std::cout << " THEN\nBEGIN\n";
 		ifCodeBlock->print();
+		if (!elseCodeBlock)
+			std::cout << "END IF\n";
+		else {
+			std::cout << "END IF\nELSE\nBEGIN\n";
+			elseCodeBlock->print();
+			std::cout << "END ELSE\n";
+		}
 	}
 };
 

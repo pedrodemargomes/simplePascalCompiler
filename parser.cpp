@@ -8,6 +8,14 @@
 extern struct Token getToken();
 struct Token token;
 
+void StatementAST::print() {
+	if (attribution)
+		attribution->print();
+	if (conditional)
+		conditional->print();
+}
+
+
 std::vector<VariablesAST> parseVars() {
 	std::vector<VariablesAST> vars;
 
@@ -23,21 +31,21 @@ std::vector<VariablesAST> parseVars() {
 		token = getToken();
 		if (!isTokenColon(token))
 			goto err;
-		
+
 		token = getToken();
 		// TODO: Support other types
 		if (!isTokenInteger(token))
 			goto err;
-		
+
 		token = getToken();
 		if (!isTokenSemicolon(token))
-			goto err;	
+			goto err;
 
 		VariablesAST v;
 		v.name = varName;
 		v.type = INT;
 		vars.emplace_back(v);
-	
+
 		token = getToken();
 	} while (!isTokenBegin(token));
 
@@ -58,7 +66,7 @@ ExpressionAST parseExpression(std::function<bool(struct Token &)> endExpr) {
 	// TODO: Parse all expressions
 
 	expr.expressionLeft = std::make_unique<ExpressionAST>();
-	
+
 	token = getToken();
 	if (isTokenInteger(token)) {
 		expr.expressionLeft->operation = LITERAL;
@@ -153,30 +161,39 @@ StatementAST parseStatement() {
 			statementAST.conditional->ifCodeBlock = parseCodeBlock();
 			token = getToken(); // Consume end
 
+			std::cout << "TOKEN: " << token.str << "\n";
+
 			if (isTokenSemicolon(token))
 				goto out;
 
 			if (!isTokenElse(token))
 				goto err;
 
+			token = getToken();
 			statementAST.conditional->elseCodeBlock = parseCodeBlock();
+
+			token = getToken();
+			if (!isTokenSemicolon(token))
+				goto out;
+		} else if() {
+
 		} else {
 			// Attribution
 			if (isTokenAlphaNumReserved(token))
 				goto err;
-			
+
 			std::string varName = token.str;
 
 			token = getToken();
 			if (!isTokenAttribution(token))
 				goto err;
-			
+
 			statementAST.attribution = std::make_unique<AttributionAST>();
 			statementAST.attribution->var = varName;
 			statementAST.attribution->expression = parseExpression(isTokenSemicolon);
-		}	
+		}
 	} else
-		goto err;	
+		goto err;
 
 out:
 	return statementAST;
@@ -190,7 +207,7 @@ err:
 std::unique_ptr<ProgramAST> parseProgram() {
 	std::unique_ptr<ProgramAST> programAST;
 	token = getToken();
-	
+
 	if (token.type == END_OF_FILE) {
 		std::cout << "END OF TOKENS\n";
 		goto err;
@@ -203,7 +220,7 @@ std::unique_ptr<ProgramAST> parseProgram() {
 		goto err;
 
 	programAST = std::make_unique<ProgramAST>();
-	
+
 	token = getToken();
 	if (isTokenNotAlphaNumOrReserved(token))
 		goto err;
@@ -220,7 +237,7 @@ std::unique_ptr<ProgramAST> parseProgram() {
 
 	#ifdef DEBUG
 	programAST->print();
-	#endif	
+	#endif
 
 	return programAST;
 
