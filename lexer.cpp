@@ -40,6 +40,18 @@ bool isTokenInteger(struct Token &token) {
 	return false;
 }
 
+bool isTokenDo(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "do");
+	return false;
+}
+
+bool isTokenWhile(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "while");
+	return false;
+}
+
 bool isTokenBegin(struct Token &token) {
 	if (token.type == ALPHANUM)
 		return icompare(token.str, "begin");

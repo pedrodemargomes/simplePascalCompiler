@@ -4,6 +4,7 @@
 #include <expected>
 #include <utility>
 #include <functional>
+#include <list>
 
 extern struct Token getToken();
 struct Token token;
@@ -11,8 +12,10 @@ struct Token token;
 void StatementAST::print() {
 	if (attribution)
 		attribution->print();
-	if (conditional)
+	else if (conditional)
 		conditional->print();
+	else if (whileLoop)
+		whileLoop->print();
 }
 
 
@@ -161,8 +164,6 @@ StatementAST parseStatement() {
 			statementAST.conditional->ifCodeBlock = parseCodeBlock();
 			token = getToken(); // Consume end
 
-			std::cout << "TOKEN: " << token.str << "\n";
-
 			if (isTokenSemicolon(token))
 				goto out;
 
@@ -175,8 +176,20 @@ StatementAST parseStatement() {
 			token = getToken();
 			if (!isTokenSemicolon(token))
 				goto out;
-		} else if() {
+		} else if(isTokenWhile(token)) {
+			// while
+			statementAST.whileLoop = std::make_unique<WhileLoopAST>();
+			statementAST.whileLoop->condition = parseExpression(isTokenDo);
 
+			if (!isTokenDo(token))
+				goto err;
+
+			token = getToken(); // Consume do
+			statementAST.whileLoop->loopCodeBlock = parseCodeBlock();
+			token = getToken(); // Consume end
+
+			if (isTokenSemicolon(token))
+				goto out;
 		} else {
 			// Attribution
 			if (isTokenAlphaNumReserved(token))

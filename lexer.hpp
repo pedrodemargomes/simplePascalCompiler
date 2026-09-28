@@ -43,5 +43,7 @@ bool isTokenMult(struct Token &token);
 bool isTokenDiv(struct Token &token);
 bool isTokenEqu(struct Token &token);
 bool isTokenDiff(struct Token &token);
+bool isTokenWhile(struct Token &token);
+bool isTokenDo(struct Token &token);
 
 #endif

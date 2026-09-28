@@ -34,6 +34,7 @@ class ProgramAST;
 class AttributionAST;
 class ConditionalAST;
 class ExpressionAST;
+class WhileLoopAST;
 
 class ExpressionAST {
 	public:
@@ -99,6 +100,7 @@ class StatementAST {
 	enum StatementType type;
 	std::unique_ptr<AttributionAST> attribution;
 	std::unique_ptr<ConditionalAST> conditional;
+	std::unique_ptr<WhileLoopAST> whileLoop;
 	void print();
 };
 
@@ -129,6 +131,19 @@ class ConditionalAST {
 			elseCodeBlock->print();
 			std::cout << "END ELSE\n";
 		}
+	}
+};
+
+class WhileLoopAST {
+	public:
+	ExpressionAST condition;
+	std::unique_ptr<CodeBlockAST> loopCodeBlock;
+	void print() {
+		std::cout << "WHILE ";
+		condition.print();
+		std::cout << " DO\nBEGIN\n";
+		loopCodeBlock->print();
+		std::cout << "END WHILE\n";
 	}
 };
 
