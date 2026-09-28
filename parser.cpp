@@ -9,6 +9,33 @@
 extern struct Token getToken();
 struct Token token;
 
+struct SymbolTableEntry {
+	std::string name;
+	enum VarType type;
+	int scope;
+};
+
+// Global scope counter
+int scope = -1;
+std::list<struct SymbolTableEntry> symbolTable;
+
+int addSymbolTableEntry(struct SymbolTableEntry &s) {
+	for (auto &it : symbolTable) {
+		if (it.name == s.name && it.scope == s.scope)
+			return 1;
+	}
+	symbolTable.push_back(s);
+	return 0;
+}
+
+struct SymbolTableEntry *getVarFromSymbolTable(std::string name) {
+	for (auto it = symbolTable.rbegin(); it != symbolTable.rend(); ++it) {
+		if (it->name == name)
+			return &*it;
+	}
+	return NULL;
+}
+
 void StatementAST::print() {
 	if (attribution)
 		attribution->print();
@@ -17,7 +44,6 @@ void StatementAST::print() {
 	else if (whileLoop)
 		whileLoop->print();
 }
-
 
 std::vector<VariablesAST> parseVars() {
 	std::vector<VariablesAST> vars;
@@ -48,6 +74,16 @@ std::vector<VariablesAST> parseVars() {
 		v.name = varName;
 		v.type = INT;
 		vars.emplace_back(v);
+		
+		struct SymbolTableEntry s = {
+			.name = v.name,
+			.type = INT,
+			.scope = scope
+		};
+		if (addSymbolTableEntry(s)) {
+			std::cout << "addSymbolTableEntry error s.name: " << s.name << " s.scope: " << s.scope << "\n";
+			goto err;
+		}
 
 		token = getToken();
 	} while (!isTokenBegin(token));
@@ -71,12 +107,17 @@ ExpressionAST parseExpression(std::function<bool(struct Token &)> endExpr) {
 	expr.expressionLeft = std::make_unique<ExpressionAST>();
 
 	token = getToken();
-	if (isTokenInteger(token)) {
+	if (isTokenTypeInteger(token)) {
 		expr.expressionLeft->operation = LITERAL;
 		expr.expressionLeft->intLiteral = std::stoi(token.str);
 	} else {
 		expr.expressionLeft->operation = VARIABLE;
 		expr.expressionLeft->var = token.str;
+		struct SymbolTableEntry *s = getVarFromSymbolTable(token.str);
+		if (!s) {
+			std::cout << "getVarFromSymbolTable error var name: " << token.str << "\n";
+			goto err;
+		}
 	}
 
 	token = getToken();
@@ -106,12 +147,17 @@ ExpressionAST parseExpression(std::function<bool(struct Token &)> endExpr) {
 	expr.expressionRight = std::make_unique<ExpressionAST>();
 
 	token = getToken();
-	if (isTokenInteger(token)) {
+	if (isTokenTypeInteger(token)) {
 		expr.expressionRight->operation = LITERAL;
 		expr.expressionRight->intLiteral = std::stoi(token.str);
 	} else {
 		expr.expressionRight->operation = VARIABLE;
 		expr.expressionRight->var = token.str;
+		struct SymbolTableEntry *s = getVarFromSymbolTable(token.str);
+		if (!s) {
+			std::cout << "getVarFromSymbolTable error var name: " << token.str << "\n";
+			goto err;
+		}
 	}
 
 	token = getToken();
@@ -203,6 +249,11 @@ StatementAST parseStatement() {
 
 			statementAST.attribution = std::make_unique<AttributionAST>();
 			statementAST.attribution->var = varName;
+			struct SymbolTableEntry *s = getVarFromSymbolTable(varName);
+			if (!s) {
+				std::cout << "getVarFromSymbolTable error var name: " << varName << "\n";
+				goto err;
+			}
 			statementAST.attribution->expression = parseExpression(isTokenSemicolon);
 		}
 	} else
@@ -245,6 +296,7 @@ std::unique_ptr<ProgramAST> parseProgram() {
 		goto err;
 
 	token = getToken();
+	scope++;
 	programAST->vars = parseVars();
 	programAST->codeBlock = parseCodeBlock();
 

@@ -40,6 +40,10 @@ bool isTokenInteger(struct Token &token) {
 	return false;
 }
 
+bool isTokenTypeInteger(struct Token &token) {
+	return token.type == INTEGER;
+}
+
 bool isTokenDo(struct Token &token) {
 	if (token.type == ALPHANUM)
 		return icompare(token.str, "do");
