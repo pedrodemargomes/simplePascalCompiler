@@ -7,12 +7,86 @@ CodeGenVisitor::CodeGenVisitor() {
 	builder = std::make_unique<llvm::IRBuilder<>>(*theContext);
 }
 
+llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
+	llvm::Value *L, *R, *ret;
+	L = R = ret = NULL;
+	
+	if (expressionAST.expressionLeft->operation == VARIABLE) {
+		L = builder->CreateLoad(
+			llvm::Type::getInt32Ty(*theContext),
+			globalVars[expressionAST.expressionLeft->var],	"L");
+	} else if (expressionAST.expressionLeft->operation == LITERAL) {
+		L = builder->getInt32(expressionAST.expressionLeft->intLiteral);
+	} else {
+		std::cout << "Error CodeGen invalid expression operation\n";
+	}
+
+	if (!expressionAST.expressionRight)
+		return L;
+
+	if (expressionAST.expressionRight->operation == VARIABLE) {
+		R = builder->CreateLoad(
+			llvm::Type::getInt32Ty(*theContext),
+			globalVars[expressionAST.expressionRight->var],	"R");
+	} else if (expressionAST.expressionRight->operation == LITERAL) {
+		R = builder->getInt32(expressionAST.expressionRight->intLiteral);
+	} else {
+		std::cout << "Error CodeGen invalid expression operation\n";
+	}
+
+	switch (expressionAST.operation) {
+		case ADD:
+		ret = builder->CreateAdd(L, R, "sum");
+		break;
+		case SUB:
+		ret = builder->CreateSub(L, R, "sub");
+		break;
+		case MUL:
+		ret = builder->CreateMul(L, R, "mul");
+		break;
+		default:
+		std::cout << "Error CodeGen invalid expression operation\n";
+		break;
+	}
+
+	return ret;
+}
+
+void CodeGenVisitor::visit(StatementAST &statementAST) {
+	if (statementAST.attribution) {
+		llvm::Value *v = this->visit(statementAST.attribution->expression);
+		builder->CreateStore(v, globalVars[statementAST.attribution->var]);
+	} else if (statementAST.conditional) {
+	
+	} else if (statementAST.whileLoop) {
+	
+	} else if (statementAST.writeLn) {
+		llvm::Value *v = this->visit(statementAST.writeLn->expression);
+		builder->CreateCall(printfFunc, {formatStr, v});
+	} else {
+		std::cout << "Error CodeGen invalid statement\n";
+	}
+
+}
+
+void CodeGenVisitor::visit(CodeBlockAST &codeBlockAST) {
+	for (auto &it : codeBlockAST.statements) {
+		this->visit(it);
+	}
+}
+
 void CodeGenVisitor::visit(ProgramAST &programAST) {
 	llvm::FunctionType *mainType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*theContext), false);
-	llvm::Function *main = llvm::Function::Create(mainType, llvm::Function::ExternalLinkage, "program", theModule.get());
+	llvm::Function *main = llvm::Function::Create(mainType, llvm::Function::ExternalLinkage, "main", theModule.get());
 	llvm::BasicBlock* entry = llvm::BasicBlock::Create(*theContext, "entry", main);
 
 	builder->SetInsertPoint(entry);
+
+	llvm::FunctionType *printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*theContext),
+		llvm::PointerType::getUnqual(*theContext),
+		true);
+	printfFunc = theModule->getOrInsertFunction("printf", printfType);
+	formatStr = builder->CreateGlobalStringPtr("%d\n", "fmt");
 
 	for (auto &it : programAST.vars) {
 		// TODO: Support other types
@@ -21,15 +95,16 @@ void CodeGenVisitor::visit(ProgramAST &programAST) {
 			type,
 			false,
 			llvm::GlobalValue::CommonLinkage,
-			0,
+			llvm::ConstantInt::get(type, 0),
 			it.name);
 		gvar->setAlignment(llvm::Align(4));
 		globalVars[it.name] = gvar;
 
 	}
+	this->visit(*programAST.codeBlock);
 
-
-	this->visit(programAST->codeBlock);
+	builder->CreateRet(llvm::ConstantInt::get(
+		llvm::Type::getInt32Ty(*theContext), 0));
 
 	std::cout << "\nLLVM IR:\n\n";
 	theModule->print(llvm::outs(), nullptr);

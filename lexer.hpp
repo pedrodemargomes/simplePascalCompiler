@@ -46,5 +46,6 @@ bool isTokenDiff(struct Token &token);
 bool isTokenWhile(struct Token &token);
 bool isTokenDo(struct Token &token);
 bool isTokenTypeInteger(struct Token &token);
+bool isTokenWriteLn(struct Token &token);
 
 #endif

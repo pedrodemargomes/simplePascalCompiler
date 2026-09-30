@@ -95,12 +95,23 @@ class AttributionAST {
 	}
 };
 
+class WriteLnAST {
+	public:
+	ExpressionAST expression;
+	void print() {
+		std::cout << "writeln( ";
+		expression.print();
+		std::cout << ") ";
+	}
+};
+
 class StatementAST {
 	public:
 	enum StatementType type;
 	std::unique_ptr<AttributionAST> attribution;
 	std::unique_ptr<ConditionalAST> conditional;
 	std::unique_ptr<WhileLoopAST> whileLoop;
+	std::unique_ptr<WriteLnAST> writeLn;
 	void print();
 };
 

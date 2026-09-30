@@ -41,6 +41,12 @@ bool isTokenInteger(struct Token &token) {
 	return false;
 }
 
+bool isTokenWriteLn(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "writeLn");
+	return false;
+}
+
 bool isTokenTypeInteger(struct Token &token) {
 	return token.type == INTEGER;
 }

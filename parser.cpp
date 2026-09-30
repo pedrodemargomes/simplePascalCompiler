@@ -43,6 +43,8 @@ void StatementAST::print() {
 		conditional->print();
 	else if (whileLoop)
 		whileLoop->print();
+	else if (writeLn)
+		writeLn->print();
 }
 
 std::vector<VariablesAST> parseVars() {
@@ -222,7 +224,7 @@ StatementAST parseStatement() {
 			token = getToken();
 			if (!isTokenSemicolon(token))
 				goto out;
-		} else if(isTokenWhile(token)) {
+		} else if (isTokenWhile(token)) {
 			// while
 			statementAST.whileLoop = std::make_unique<WhileLoopAST>();
 			statementAST.whileLoop->condition = parseExpression(isTokenDo);
@@ -236,6 +238,17 @@ StatementAST parseStatement() {
 
 			if (isTokenSemicolon(token))
 				goto out;
+		} else if (isTokenWriteLn(token)) {
+			token = getToken();
+			if (!isTokenOpenParenthesis(token))
+				goto err;	
+
+			statementAST.writeLn = std::make_unique<WriteLnAST>();
+			statementAST.writeLn->expression = parseExpression(isTokenCloseParenthesis);
+			
+			if (!isTokenCloseParenthesis(token))
+				goto err;
+			token = getToken(); // Consume )
 		} else {
 			// Attribution
 			if (isTokenAlphaNumReserved(token))

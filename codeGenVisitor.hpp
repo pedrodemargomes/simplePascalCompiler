@@ -23,9 +23,14 @@ class CodeGenVisitor {
 	std::unique_ptr<llvm::Module> theModule;
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	std::map<std::string, llvm::GlobalVariable *> globalVars;
+	llvm::FunctionCallee printfFunc;
+	llvm::Value *formatStr;
 
 	CodeGenVisitor();
 	void visit(ProgramAST &programAST);
+	void visit(CodeBlockAST &codeBlockAST);
+	void visit(StatementAST &statementAST);
+	llvm::Value *visit(ExpressionAST &expressionAST);
 };
 
 #endif
