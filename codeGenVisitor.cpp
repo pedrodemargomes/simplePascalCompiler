@@ -44,6 +44,18 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 		case MUL:
 		ret = builder->CreateMul(L, R, "mul");
 		break;
+		case EQUAL:
+		ret = builder->CreateICmpEQ(L, R, "equ");
+		break;
+		case DIFF:
+		ret = builder->CreateICmpNE(L, R, "diff");
+		break;
+		case GREATER:
+		ret = builder->CreateICmpSGT(L, R, "gt");
+		break;
+		case LESS:
+		ret = builder->CreateICmpSLT(L, R, "lt");
+		break;
 		default:
 		std::cout << "Error CodeGen invalid expression operation\n";
 		break;
