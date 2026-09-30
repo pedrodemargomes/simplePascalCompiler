@@ -1,0 +1,2 @@
+./build/simpascompiler examples/ex1.pas > t.ll && llc t.ll -o t.s && clang t.s -o program && ./program
+
