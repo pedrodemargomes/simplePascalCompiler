@@ -74,7 +74,7 @@ std::vector<VariablesAST> parseVars() {
 		v.name = varName;
 		v.type = INT;
 		vars.emplace_back(v);
-		
+
 		struct SymbolTableEntry s = {
 			.name = v.name,
 			.type = INT,

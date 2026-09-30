@@ -11,15 +11,18 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+#include <map>
 
 class CodeGenVisitor {
 	public:
 	std::unique_ptr<llvm::LLVMContext> theContext;
 	std::unique_ptr<llvm::Module> theModule;
 	std::unique_ptr<llvm::IRBuilder<>> builder;
+	std::map<std::string, llvm::GlobalVariable *> globalVars;
 
 	CodeGenVisitor();
 	void visit(ProgramAST &programAST);
