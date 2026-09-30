@@ -57,7 +57,24 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 		llvm::Value *v = this->visit(statementAST.attribution->expression);
 		builder->CreateStore(v, globalVars[statementAST.attribution->var]);
 	} else if (statementAST.conditional) {
-	
+		llvm::Function *fun = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*theContext, "then", fun);
+		llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*theContext, "else", fun);
+		llvm::BasicBlock *continueBlock = llvm::BasicBlock::Create(*theContext, "ifcont", fun);
+
+		llvm::Value *expr = this->visit(statementAST.conditional->condition);
+		llvm::Value *cond = builder->CreateICmpNE(expr, builder->getInt32(0), "not_zero");
+		builder->CreateCondBr(cond, thenBlock, elseBlock);
+
+		builder->SetInsertPoint(thenBlock);
+		this->visit(*statementAST.conditional->ifCodeBlock);
+		builder->CreateBr(continueBlock);
+
+		builder->SetInsertPoint(elseBlock);
+		this->visit(*statementAST.conditional->elseCodeBlock);
+		builder->CreateBr(continueBlock);
+
+		builder->SetInsertPoint(continueBlock);
 	} else if (statementAST.whileLoop) {
 	
 	} else if (statementAST.writeLn) {
@@ -106,7 +123,7 @@ void CodeGenVisitor::visit(ProgramAST &programAST) {
 	builder->CreateRet(llvm::ConstantInt::get(
 		llvm::Type::getInt32Ty(*theContext), 0));
 
-	std::cout << "\nLLVM IR:\n\n";
+	std::cout << "\n; LLVM IR:\n\n";
 	theModule->print(llvm::outs(), nullptr);
 }
 
