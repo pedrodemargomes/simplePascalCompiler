@@ -89,6 +89,7 @@ class AttributionAST {
 	ExpressionAST expression;
 	// var = expression
 	void print() {
+		std::cout << "; ";
 		std::cout << var << " := ";
 		expression.print();
 		std::cout << "\n";
@@ -99,6 +100,7 @@ class WriteLnAST {
 	public:
 	ExpressionAST expression;
 	void print() {
+		std::cout << "; ";
 		std::cout << "writeln( ";
 		expression.print();
 		std::cout << ") ";
@@ -131,16 +133,17 @@ class ConditionalAST {
 	std::unique_ptr<CodeBlockAST> ifCodeBlock;
 	std::unique_ptr<CodeBlockAST> elseCodeBlock;
 	void print() {
+		std::cout << "; ";
 		std::cout << "IF ";
 		condition.print();
-		std::cout << " THEN\nBEGIN\n";
+		std::cout << " THEN\n; BEGIN\n";
 		ifCodeBlock->print();
 		if (!elseCodeBlock)
-			std::cout << "END IF\n";
+			std::cout << "; END IF\n";
 		else {
-			std::cout << "END IF\nELSE\nBEGIN\n";
+			std::cout << "; END IF\n; ELSE\n; BEGIN\n";
 			elseCodeBlock->print();
-			std::cout << "END ELSE\n";
+			std::cout << "; END ELSE\n";
 		}
 	}
 };
@@ -150,11 +153,12 @@ class WhileLoopAST {
 	ExpressionAST condition;
 	std::unique_ptr<CodeBlockAST> loopCodeBlock;
 	void print() {
+		std::cout << "; ";
 		std::cout << "WHILE ";
 		condition.print();
-		std::cout << " DO\nBEGIN\n";
+		std::cout << "; DO\n; BEGIN\n";
 		loopCodeBlock->print();
-		std::cout << "END WHILE\n";
+		std::cout << "; END WHILE\n";
 	}
 };
 
@@ -175,10 +179,10 @@ class ProgramAST {
 	std::vector<VariablesAST> vars;
 	std::unique_ptr<CodeBlockAST> codeBlock;
 	void print() {
-		std::cout << "programName: " << programName << "\n";
-		std::cout << "vars:\n";
+		std::cout << "; programName: " << programName << "\n";
+		std::cout << "; vars:\n";
 		for (auto &it : vars) {
-			std::cout << "	" << it.name << " " << it.type << "\n";
+			std::cout << ";	" << it.name << " " << it.type << "\n";
 		}
 		codeBlock->print();
 	}
