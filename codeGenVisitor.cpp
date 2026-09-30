@@ -75,16 +75,28 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 		llvm::BasicBlock *continueBlock = llvm::BasicBlock::Create(*theContext, "ifcont", fun);
 
 		llvm::Value *expr = this->visit(statementAST.conditional->condition);
-		llvm::Value *cond = builder->CreateICmpNE(expr, builder->getInt32(0), "not_zero");
-		builder->CreateCondBr(cond, thenBlock, elseBlock);
+
+		// If boolean expression
+		if (expr->getType()->isIntegerTy(1)) {
+			builder->CreateCondBr(expr, thenBlock, elseBlock);
+		} else {
+			llvm::Value *cond = builder->CreateICmpNE(expr, builder->getInt32(0), "not_zero");
+			builder->CreateCondBr(cond, thenBlock, elseBlock);
+		}
 
 		builder->SetInsertPoint(thenBlock);
 		this->visit(*statementAST.conditional->ifCodeBlock);
 		builder->CreateBr(continueBlock);
 
-		builder->SetInsertPoint(elseBlock);
-		this->visit(*statementAST.conditional->elseCodeBlock);
-		builder->CreateBr(continueBlock);
+		if (statementAST.conditional->elseCodeBlock) {
+			builder->SetInsertPoint(elseBlock);
+			this->visit(*statementAST.conditional->elseCodeBlock);
+			builder->CreateBr(continueBlock);
+		} else {
+			// Else stub
+			builder->SetInsertPoint(elseBlock);
+			builder->CreateBr(continueBlock);
+		}
 
 		builder->SetInsertPoint(continueBlock);
 	} else if (statementAST.whileLoop) {
