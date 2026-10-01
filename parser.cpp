@@ -3,7 +3,6 @@
 #include <iostream>
 #include <expected>
 #include <utility>
-#include <functional>
 #include <list>
 
 extern struct Token getToken();
@@ -100,34 +99,26 @@ err:
 
 }
 
-ExpressionAST parseExpression(std::function<bool(struct Token &)> endExpr) {
-	ExpressionAST expr;
+/*
+ Precedence order (highest to lowest):
+ (* /)  (+ -) (= <> < >)
 
-	// Parse only simple expression: Var/integer OP var/integer
-	// TODO: Parse all expressions
+expr     → | expr > addition
+           | expr < addition
+           | expr = addition
+           | expr != addition
+	   | addition
 
-	expr.expressionLeft = std::make_unique<ExpressionAST>();
+addition   → addition + term
+           | addition - term
+           | term
 
-	token = getToken();
-	if (isTokenTypeInteger(token)) {
-		expr.expressionLeft->operation = LITERAL;
-		expr.expressionLeft->intLiteral = std::stoi(token.str);
-	} else {
-		expr.expressionLeft->operation = VARIABLE;
-		expr.expressionLeft->var = token.str;
-		struct SymbolTableEntry *s = getVarFromSymbolTable(token.str);
-		if (!s) {
-			std::cout << "getVarFromSymbolTable error var name: " << token.str << "\n";
-			goto err;
-		}
-	}
+term       → term * factor
+           | term / factor
+           | factor
 
-	token = getToken();
-	if (endExpr(token))
-		return expr;
-
-	if (!isTokenBinaryOperation(token))
-		goto err;
+factor     → digit
+           | ( expr )
 
 	if (isTokenPlus(token))
 		expr.operation = ADD;
@@ -146,33 +137,113 @@ ExpressionAST parseExpression(std::function<bool(struct Token &)> endExpr) {
 	else if (isTokenLess(token))
 		expr.operation = LESS;
 
-	expr.expressionRight = std::make_unique<ExpressionAST>();
+*/
 
-	token = getToken();
+std::unique_ptr<ExpressionAST> parseFactor(std::function<bool(struct Token &)> endExpr) {
+	std::unique_ptr<ExpressionAST> factorExpr = std::make_unique<ExpressionAST>();
+
 	if (isTokenTypeInteger(token)) {
-		expr.expressionRight->operation = LITERAL;
-		expr.expressionRight->intLiteral = std::stoi(token.str);
+		factorExpr->operation = LITERAL;
+		factorExpr->intLiteral = std::stoi(token.str);
+		token = getToken();
+	} else if (isTokenOpenParenthesis(token)) {
+		factorExpr->expressionLeft = parseExpression(isTokenCloseParenthesis);
+		token = getToken();
 	} else {
-		expr.expressionRight->operation = VARIABLE;
-		expr.expressionRight->var = token.str;
-		struct SymbolTableEntry *s = getVarFromSymbolTable(token.str);
-		if (!s) {
-			std::cout << "getVarFromSymbolTable error var name: " << token.str << "\n";
+		if (isTokenNotAlphaNumOrReserved(token))
 			goto err;
-		}
+		factorExpr->operation = VARIABLE;
+		factorExpr->var = token.str;
+		token = getToken();
 	}
 
-	token = getToken();
-	if (!endExpr(token))
-		goto err;
-
-	return expr;
+	return factorExpr;
 
 err:
 	std::cout << "Parser error in ParseExpression at token:\n";
 	std::cout << token.str << " " << token.type << "\n";
 
-	return expr;
+	return factorExpr;
+}
+
+std::unique_ptr<ExpressionAST> parseTerm(std::function<bool(struct Token &)> endExpr) {
+	std::unique_ptr<ExpressionAST> left = parseFactor(endExpr);
+
+	while (isTokenMult(token) || isTokenDiv(token)) {
+		std::unique_ptr<ExpressionAST> newExpr = std::make_unique<ExpressionAST>();
+		if (isTokenMult(token))
+			newExpr->operation = MUL;
+		else if (isTokenDiv(token))
+			newExpr->operation = DIV;
+		token = getToken();
+		std::unique_ptr<ExpressionAST> right = parseFactor(endExpr);
+		newExpr->expressionLeft = std::move(left);
+		newExpr->expressionRight = std::move(right);
+		left = std::move(newExpr);
+	}
+
+	return left;
+
+err:
+	std::cout << "Parser error in ParseExpression at token:\n";
+	std::cout << token.str << " " << token.type << "\n";
+
+	return left;
+}
+
+std::unique_ptr<ExpressionAST> parseAddition(std::function<bool(struct Token &)> endExpr) {
+	std::unique_ptr<ExpressionAST> left = parseTerm(endExpr);
+
+	while (isTokenMinus(token) || isTokenPlus(token)) {
+		std::unique_ptr<ExpressionAST> newExpr = std::make_unique<ExpressionAST>();
+		if (isTokenPlus(token))
+			newExpr->operation = ADD;
+		else if (isTokenMinus(token))
+			newExpr->operation = SUB;
+		token = getToken();
+		std::unique_ptr<ExpressionAST> right = parseTerm(endExpr);
+		newExpr->expressionLeft = std::move(left);
+		newExpr->expressionRight = std::move(right);
+		left = std::move(newExpr);
+	}
+
+	return left;
+
+err:
+	std::cout << "Parser error in ParseExpression at token:\n";
+	std::cout << token.str << " " << token.type << "\n";
+
+	return left;
+}
+
+std::unique_ptr<ExpressionAST> parseExpression(std::function<bool(struct Token &)> endExpr) {
+	token = getToken();
+	std::unique_ptr<ExpressionAST> left = parseAddition(endExpr);
+
+	while (isTokenDiff(token) || isTokenEqu(token) || isTokenGreater(token) || isTokenLess(token)) {
+		std::unique_ptr<ExpressionAST> newExpr = std::make_unique<ExpressionAST>();
+		if (isTokenDiff(token))
+			newExpr->operation = DIFF;
+		else if (isTokenEqu(token))
+			newExpr->operation = EQUAL;
+		else if (isTokenGreater(token))
+			newExpr->operation = GREATER;
+		else if (isTokenLess(token))
+			newExpr->operation = LESS;
+		token = getToken();
+		std::unique_ptr<ExpressionAST> right = parseAddition(endExpr);
+		newExpr->expressionLeft = std::move(left);
+		newExpr->expressionRight = std::move(right);
+		left = std::move(newExpr);
+	}
+
+	return left;
+
+err:
+	std::cout << "Parser error in ParseExpression at token:\n";
+	std::cout << token.str << " " << token.type << "\n";
+
+	return left;
 }
 
 std::unique_ptr<CodeBlockAST> parseCodeBlock() {

@@ -8,6 +8,7 @@ CodeGenVisitor::CodeGenVisitor() {
 }
 
 llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
+	/*
 	llvm::Value *L, *R, *ret;
 	L = R = ret = NULL;
 	
@@ -62,11 +63,12 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 	}
 
 	return ret;
+	*/
 }
 
 void CodeGenVisitor::visit(StatementAST &statementAST) {
 	if (statementAST.attribution) {
-		llvm::Value *v = this->visit(statementAST.attribution->expression);
+		llvm::Value *v = this->visit(*statementAST.attribution->expression);
 		builder->CreateStore(v, globalVars[statementAST.attribution->var]);
 	} else if (statementAST.conditional) {
 		llvm::Function *fun = builder->GetInsertBlock()->getParent();
@@ -74,7 +76,7 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 		llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*theContext, "else", fun);
 		llvm::BasicBlock *continueBlock = llvm::BasicBlock::Create(*theContext, "ifcont", fun);
 
-		llvm::Value *expr = this->visit(statementAST.conditional->condition);
+		llvm::Value *expr = this->visit(*statementAST.conditional->condition);
 
 		// If boolean expression
 		if (expr->getType()->isIntegerTy(1)) {
@@ -108,7 +110,7 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 		builder->CreateBr(whileBlock);
 		builder->SetInsertPoint(whileBlock);
 
-		llvm::Value *expr = this->visit(statementAST.whileLoop->condition);
+		llvm::Value *expr = this->visit(*statementAST.whileLoop->condition);
 		// If boolean expression
 		if (expr->getType()->isIntegerTy(1)) {
 			builder->CreateCondBr(expr, loop , whileContinueBlock);
@@ -125,7 +127,7 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 		builder->SetInsertPoint(whileContinueBlock);
 
 	} else if (statementAST.writeLn) {
-		llvm::Value *v = this->visit(statementAST.writeLn->expression);
+		llvm::Value *v = this->visit(*statementAST.writeLn->expression);
 		builder->CreateCall(printfFunc, {formatStr, v});
 	} else {
 		std::cout << "Error CodeGen invalid statement\n";

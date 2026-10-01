@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <functional>
 
 enum VarType {
 	INT
@@ -39,34 +40,27 @@ class WhileLoopAST;
 class ExpressionAST {
 	public:
 	enum Operation operation = NONE;
-	std::unique_ptr<ExpressionAST> expressionLeft;
-	std::unique_ptr<ExpressionAST> expressionRight;
 	std::string var;
 	int intLiteral;
+	std::unique_ptr<ExpressionAST> expressionRight;
+	std::unique_ptr<ExpressionAST> expressionLeft;
 	void print() {
 		if (operation == VARIABLE) {
-			std::cout << var << " ";
+			std::cout << var;
 			return;
 		}
 		if (operation == LITERAL) {
-			std::cout << intLiteral << " ";
+			std::cout << intLiteral;
 			return;
 		}
 
-		if (expressionLeft)
+		if (expressionLeft) {
+			std::cout << "( ";
 			expressionLeft->print();
-		if (operation == NONE)
-			return;
+			std::cout << " )";
+		}
 		// Print operation
-		if (operation == ADD)
-			std::cout << " + ";
-		else if (operation == SUB)
-			std::cout << " - ";
-		else if (operation == MUL)
-			std::cout << " * ";
-		else if (operation == DIV)
-			std::cout << " / ";
-		else if (operation == LESS)
+		if (operation == LESS)
 			std::cout << " < ";
 		else if (operation == GREATER)
 			std::cout << " > ";
@@ -74,35 +68,47 @@ class ExpressionAST {
 			std::cout << " <> ";
 		else if (operation == EQUAL)
 			std::cout << " = ";
+		else if (operation == ADD)
+			std::cout << " + ";
+		else if (operation == SUB)
+			std::cout << " - ";
+		else if (operation == MUL)
+			std::cout << " * ";
+		else if (operation == DIV)
+			std::cout << " / ";
+		else if (operation == NONE)
+			std::cout << " NONE ";
 		else
 			std::cout << " UNKNOWN OPERATION ";
 		// Print expressionRight
-		if (expressionRight)
+		if (expressionRight) {
+			std::cout << "( ";
 			expressionRight->print();
-
+			std::cout << " )";
+		}
 	}
 };
 
 class AttributionAST {
 	public:
 	std::string var;
-	ExpressionAST expression;
+	std::unique_ptr<ExpressionAST> expression;
 	// var = expression
 	void print() {
 		std::cout << "; ";
 		std::cout << var << " := ";
-		expression.print();
+		expression->print();
 		std::cout << "\n";
 	}
 };
 
 class WriteLnAST {
 	public:
-	ExpressionAST expression;
+	std::unique_ptr<ExpressionAST> expression;
 	void print() {
 		std::cout << "; ";
 		std::cout << "writeln( ";
-		expression.print();
+		expression->print();
 		std::cout << ") ";
 	}
 };
@@ -129,13 +135,13 @@ class CodeBlockAST {
 
 class ConditionalAST {
 	public:
-	ExpressionAST condition;
+	std::unique_ptr<ExpressionAST> condition;
 	std::unique_ptr<CodeBlockAST> ifCodeBlock;
 	std::unique_ptr<CodeBlockAST> elseCodeBlock;
 	void print() {
 		std::cout << "; ";
 		std::cout << "IF ";
-		condition.print();
+		condition->print();
 		std::cout << " THEN\n; BEGIN\n";
 		ifCodeBlock->print();
 		if (!elseCodeBlock)
@@ -150,12 +156,12 @@ class ConditionalAST {
 
 class WhileLoopAST {
 	public:
-	ExpressionAST condition;
+	std::unique_ptr<ExpressionAST> condition;
 	std::unique_ptr<CodeBlockAST> loopCodeBlock;
 	void print() {
 		std::cout << "; ";
 		std::cout << "WHILE ";
-		condition.print();
+		condition->print();
 		std::cout << "; DO\n; BEGIN\n";
 		loopCodeBlock->print();
 		std::cout << "; END WHILE\n";
@@ -190,13 +196,10 @@ class ProgramAST {
 
 std::unique_ptr<ProgramAST> parseProgram();
 std::vector<VariablesAST> parseVars();
-ExpressionAST parseExpression();
 std::unique_ptr<CodeBlockAST> parseCodeBlock();
 StatementAST parseStatement();
 std::unique_ptr<ProgramAST> parseProgram();
 
-
-
-
+std::unique_ptr<ExpressionAST> parseExpression(std::function<bool(struct Token &)> endExpr);
 
 #endif
