@@ -536,7 +536,7 @@ int main(int argc,char *argv[]) {
 
 	// Generate LLVM IR code
 	CodeGenVisitor cgv;
-	//cgv.visit(*ast.program);
+	cgv.visit(*ast.program);
 
 	file.close();
 

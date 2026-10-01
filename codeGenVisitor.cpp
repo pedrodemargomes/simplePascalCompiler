@@ -8,32 +8,25 @@ CodeGenVisitor::CodeGenVisitor() {
 }
 
 llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
-	/*
 	llvm::Value *L, *R, *ret;
 	L = R = ret = NULL;
 	
-	if (expressionAST.expressionLeft->operation == VARIABLE) {
+	if (expressionAST.operation == VARIABLE) {
 		L = builder->CreateLoad(
 			llvm::Type::getInt32Ty(*theContext),
-			globalVars[expressionAST.expressionLeft->var],	"L");
-	} else if (expressionAST.expressionLeft->operation == LITERAL) {
-		L = builder->getInt32(expressionAST.expressionLeft->intLiteral);
-	} else {
-		std::cout << "Error CodeGen invalid expression operation\n";
+			globalVars[expressionAST.var],	"L");
+		return L;
+	} else if (expressionAST.operation == LITERAL) {
+		L = builder->getInt32(expressionAST.intLiteral);
+		return L;
 	}
+
+	L = this->visit(*expressionAST.expressionLeft);
 
 	if (!expressionAST.expressionRight)
 		return L;
 
-	if (expressionAST.expressionRight->operation == VARIABLE) {
-		R = builder->CreateLoad(
-			llvm::Type::getInt32Ty(*theContext),
-			globalVars[expressionAST.expressionRight->var],	"R");
-	} else if (expressionAST.expressionRight->operation == LITERAL) {
-		R = builder->getInt32(expressionAST.expressionRight->intLiteral);
-	} else {
-		std::cout << "Error CodeGen invalid expression operation\n";
-	}
+	R = this->visit(*expressionAST.expressionRight);
 
 	switch (expressionAST.operation) {
 		case ADD:
@@ -63,7 +56,6 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 	}
 
 	return ret;
-	*/
 }
 
 void CodeGenVisitor::visit(StatementAST &statementAST) {
