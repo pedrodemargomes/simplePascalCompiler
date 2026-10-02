@@ -35,6 +35,11 @@ bool isTokenVar(struct Token &token) {
 	return false;
 }
 
+bool isTokenFunction(struct Token &token) {
+	if (token.type == ALPHANUM)
+		return icompare(token.str, "function");
+	return false;
+}
 bool isTokenInteger(struct Token &token) {
 	if (token.type == ALPHANUM)
 		return icompare(token.str, "integer");
@@ -111,6 +116,12 @@ bool isTokenNotAlphaNumOrReserved(struct Token &token) {
 bool isTokenSemicolon(struct Token &token) {
 	if (token.type == SYMBOL_ONE)
 		return icompare(token.str, ";");
+	return false;
+}
+
+bool isTokenComma(struct Token &token) {
+	if (token.type == SYMBOL_ONE)
+		return icompare(token.str, ",");
 	return false;
 }
 
@@ -206,7 +217,7 @@ bool isSymbolMult(char c) {
 }
 
 bool isSymbolOne(char c) {
-	if (strchr(";().-+*/", c))
+	if (strchr(";().-+*/,", c))
 		return true;
 	return false;
 }
@@ -495,6 +506,9 @@ struct Token getToken() {
 	}
 
 out:
+	#ifdef DEBUG
+	std::cout << token.str << " ";
+	#endif
 	return token;
 end:
 	token.type = ERROR;

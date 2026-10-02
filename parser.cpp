@@ -18,6 +18,16 @@ struct SymbolTableEntry {
 int scope = -1;
 std::list<struct SymbolTableEntry> symbolTable;
 
+int removeAllFromCurrentScope() {
+	for (auto it = symbolTable.begin(); it != symbolTable.end();) {
+		if (it->scope == scope)
+			it = symbolTable.erase(it);
+		else
+			++it;
+	}
+	return 0;
+}
+
 int addSymbolTableEntry(struct SymbolTableEntry &s) {
 	for (auto &it : symbolTable) {
 		if (it.name == s.name && it.scope == s.scope)
@@ -87,7 +97,7 @@ std::vector<VariablesAST> parseVars() {
 		}
 
 		token = getToken();
-	} while (!isTokenBegin(token));
+	} while (!isTokenBegin(token) && !isTokenFunction(token));
 
 out:
 	return vars;
@@ -152,9 +162,31 @@ std::unique_ptr<ExpressionAST> parseFactor(std::function<bool(struct Token &)> e
 	} else {
 		if (isTokenNotAlphaNumOrReserved(token))
 			goto err;
-		factorExpr->operation = VARIABLE;
-		factorExpr->var = token.str;
+		std::string str = token.str;
 		token = getToken();
+		if (isTokenOpenParenthesis(token)) {
+			// Is a function/procedure call
+			factorExpr->operation = FUN_OR_PROC;
+			factorExpr->var = str;
+
+			// Read args
+			token = getToken();
+			while (!isTokenCloseParenthesis(token)) {
+				std::unique_ptr<ExpressionAST> expr = parseExpression(endExpr);
+
+				factorExpr->args.emplace_back(std::move(*expr));
+
+				if (isTokenComma(token)) {
+					token = getToken();
+					continue;
+				}
+			}
+			token = getToken();
+			std::cout << "STR: " << token.str << "\n";
+		} else {
+			factorExpr->operation = VARIABLE;
+			factorExpr->var = str;
+		}
 	}
 
 	return factorExpr;
@@ -352,6 +384,136 @@ err:
 	return statementAST;
 }
 
+std::vector<ArgumentAST> parseArgs() {
+	std::vector<ArgumentAST> args;
+
+	if (isTokenCloseParenthesis(token))
+		goto out;
+
+	for (;;) {
+		if (isTokenNotAlphaNumOrReserved(token))
+			goto err;
+		
+		std::string varName = token.str;
+
+		token = getToken();
+		if (!isTokenColon(token))
+			goto err;
+
+		token = getToken();
+		if (!isTokenInteger(token))
+			goto err;
+
+		struct SymbolTableEntry s = {
+			.name = varName,
+			.type = INT,
+			.scope = scope
+		};
+		if (addSymbolTableEntry(s)) {
+			std::cout << "addSymbolTableEntry error s.name: " << s.name << " s.scope: " << s.scope << "\n";
+			goto err;
+		}
+
+		token = getToken();
+		if (isTokenCloseParenthesis(token))
+			goto out;
+
+		if (!isTokenSemicolon(token))
+			goto err;
+
+		token = getToken();
+	}
+
+
+out:
+	return args;
+
+err:
+	std::cout << "Parser error at token:\n";
+	std::cout << token.str << " " << token.type << "\n";
+
+	return args;
+}
+
+// TODO: Add Procedure
+std::vector<FunOrProcAST> parseFunOrProcs() {
+	std::vector<FunOrProcAST> funOrProcAST;
+
+	for (;;) {
+		if (!isTokenFunction(token))
+			goto out;
+
+		FunOrProcAST forp;
+
+		token = getToken();
+		if (isTokenNotAlphaNumOrReserved(token))
+			goto err;
+
+		forp.name = token.str;
+
+		struct SymbolTableEntry s = {
+			.name = forp.name,
+			.type = FUNCTION,
+			.scope = scope
+		};
+		if (addSymbolTableEntry(s)) {
+			std::cout << "addSymbolTableEntry error s.name: " << s.name << " s.scope: " << s.scope << "\n";
+			goto err;
+		}
+
+		token = getToken();
+		if (!isTokenOpenParenthesis(token))
+			goto err;
+
+		scope++;
+		
+		token = getToken();
+		forp.args = parseArgs();
+
+		if (!isTokenCloseParenthesis(token))
+			goto err;
+
+		token = getToken();
+		if (!isTokenColon(token))
+			goto err;
+
+		token = getToken();
+		if (!isTokenInteger(token))
+			goto err;
+
+		token = getToken();
+		if (!isTokenSemicolon(token))
+			goto err;
+
+		token = getToken();
+		forp.vars = parseVars();
+		forp.codeBlock = parseCodeBlock();
+
+		if (!isTokenEnd(token))
+			goto err;
+
+		token = getToken();
+		if (!isTokenSemicolon(token))
+			goto err;
+
+		funOrProcAST.push_back(std::move(forp));
+
+		removeAllFromCurrentScope();
+		scope--;
+
+		token = getToken();
+	}
+
+out:
+	return funOrProcAST;
+
+err:
+	std::cout << "Parser error at token:\n";
+	std::cout << token.str << " " << token.type << "\n";
+
+	return funOrProcAST;
+}
+
 std::unique_ptr<ProgramAST> parseProgram() {
 	std::unique_ptr<ProgramAST> programAST;
 	token = getToken();
@@ -382,11 +544,11 @@ std::unique_ptr<ProgramAST> parseProgram() {
 	token = getToken();
 	scope++;
 	programAST->vars = parseVars();
-	programAST->codeBlock = parseCodeBlock();
+	if (isTokenFunction(token))
+		programAST->funOrProcs = parseFunOrProcs();
 
-	#ifdef DEBUG
+	programAST->codeBlock = parseCodeBlock();
 	programAST->print();
-	#endif
 
 	return programAST;
 

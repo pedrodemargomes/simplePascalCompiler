@@ -7,7 +7,9 @@
 #include <functional>
 
 enum VarType {
-	INT
+	INT,
+	FUNCTION,
+	PROCEDURE
 	// TODO: Add other types
 };
 
@@ -20,6 +22,7 @@ enum Operation {
 	NONE,
 	VARIABLE,
 	LITERAL,
+	FUN_OR_PROC,
 	// Binary operations
 	ADD,
 	SUB,
@@ -44,7 +47,16 @@ class ExpressionAST {
 	int intLiteral;
 	std::unique_ptr<ExpressionAST> expressionRight;
 	std::unique_ptr<ExpressionAST> expressionLeft;
+	std::vector<ExpressionAST> args;
 	void print() {
+		if (operation == FUN_OR_PROC) {
+			std::cout << var << "(";
+			for (auto &i : args) {
+				i.print();
+				std::cout << " , ";
+			}
+			return;
+		}
 		if (operation == VARIABLE) {
 			std::cout << var;
 			return;
@@ -179,10 +191,26 @@ class VariablesAST {
 	enum VarType type;
 };
 
+class ArgumentAST {
+	public:
+	std::string name;
+	enum VarType type;
+	bool isRef;
+};
+
+class FunOrProcAST {
+	public:
+	std::string name;
+	std::vector<ArgumentAST> args;
+	std::vector<VariablesAST> vars;
+	std::unique_ptr<CodeBlockAST> codeBlock;
+};
+
 class ProgramAST {
 	public:
 	std::string programName;
 	std::vector<VariablesAST> vars;
+	std::vector<FunOrProcAST> funOrProcs;
 	std::unique_ptr<CodeBlockAST> codeBlock;
 	void print() {
 		std::cout << "; programName: " << programName << "\n";
