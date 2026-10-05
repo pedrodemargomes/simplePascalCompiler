@@ -157,11 +157,15 @@ std::unique_ptr<ExpressionAST> parseFactor(std::function<bool(struct Token &)> e
 		factorExpr->intLiteral = std::stoi(token.str);
 		token = getToken();
 	} else if (isTokenOpenParenthesis(token)) {
+		token = getToken();
 		factorExpr->expressionLeft = parseExpression(isTokenCloseParenthesis);
 		token = getToken();
 	} else {
+		//if (isTokenCloseParenthesis(token))
+		//	goto out;
 		if (isTokenNotAlphaNumOrReserved(token))
 			goto err;
+
 		std::string str = token.str;
 		token = getToken();
 		if (isTokenOpenParenthesis(token)) {
@@ -182,17 +186,17 @@ std::unique_ptr<ExpressionAST> parseFactor(std::function<bool(struct Token &)> e
 				}
 			}
 			token = getToken();
-			std::cout << "STR: " << token.str << "\n";
 		} else {
 			factorExpr->operation = VARIABLE;
 			factorExpr->var = str;
 		}
 	}
 
+out:
 	return factorExpr;
 
 err:
-	std::cout << "Parser error in ParseExpression at token:\n";
+	std::cout << "\nParser error in ParseFactor at token:\n";
 	std::cout << token.str << " " << token.type << "\n";
 
 	return factorExpr;
@@ -217,7 +221,7 @@ std::unique_ptr<ExpressionAST> parseTerm(std::function<bool(struct Token &)> end
 	return left;
 
 err:
-	std::cout << "Parser error in ParseExpression at token:\n";
+	std::cout << "\nParser error in ParseTerm at token:\n";
 	std::cout << token.str << " " << token.type << "\n";
 
 	return left;
@@ -242,14 +246,13 @@ std::unique_ptr<ExpressionAST> parseAddition(std::function<bool(struct Token &)>
 	return left;
 
 err:
-	std::cout << "Parser error in ParseExpression at token:\n";
+	std::cout << "\nParser error in ParseAddition at token:\n";
 	std::cout << token.str << " " << token.type << "\n";
 
 	return left;
 }
 
 std::unique_ptr<ExpressionAST> parseExpression(std::function<bool(struct Token &)> endExpr) {
-	token = getToken();
 	std::unique_ptr<ExpressionAST> left = parseAddition(endExpr);
 
 	while (isTokenDiff(token) || isTokenEqu(token) || isTokenGreater(token) || isTokenLess(token)) {
@@ -272,7 +275,7 @@ std::unique_ptr<ExpressionAST> parseExpression(std::function<bool(struct Token &
 	return left;
 
 err:
-	std::cout << "Parser error in ParseExpression at token:\n";
+	std::cout << "\nParser error in ParseExpression at token:\n";
 	std::cout << token.str << " " << token.type << "\n";
 
 	return left;
@@ -306,6 +309,7 @@ StatementAST parseStatement() {
 		// If - else
 		if (isTokenIf(token)) {
 			statementAST.conditional = std::make_unique<ConditionalAST>();
+			token = getToken();
 			statementAST.conditional->condition = parseExpression(isTokenThen);
 
 			if (!isTokenThen(token))
@@ -330,6 +334,7 @@ StatementAST parseStatement() {
 		} else if (isTokenWhile(token)) {
 			// while
 			statementAST.whileLoop = std::make_unique<WhileLoopAST>();
+			token = getToken();
 			statementAST.whileLoop->condition = parseExpression(isTokenDo);
 
 			if (!isTokenDo(token))
@@ -347,6 +352,7 @@ StatementAST parseStatement() {
 				goto err;	
 
 			statementAST.writeLn = std::make_unique<WriteLnAST>();
+			token = getToken();
 			statementAST.writeLn->expression = parseExpression(isTokenCloseParenthesis);
 			
 			if (!isTokenCloseParenthesis(token))
@@ -370,6 +376,7 @@ StatementAST parseStatement() {
 				std::cout << "getVarFromSymbolTable error var name: " << varName << "\n";
 				goto err;
 			}
+			token = getToken();
 			statementAST.attribution->expression = parseExpression(isTokenSemicolon);
 		}
 	} else
@@ -413,6 +420,13 @@ std::vector<ArgumentAST> parseArgs() {
 			std::cout << "addSymbolTableEntry error s.name: " << s.name << " s.scope: " << s.scope << "\n";
 			goto err;
 		}
+		// Add arg
+		ArgumentAST arg = {
+			.name = varName,
+			.type = INT,
+			.isRef = false
+		};
+		args.emplace_back(arg);
 
 		token = getToken();
 		if (isTokenCloseParenthesis(token))
@@ -444,6 +458,7 @@ std::vector<FunOrProcAST> parseFunOrProcs() {
 			goto out;
 
 		FunOrProcAST forp;
+		forp.isFun = true;
 
 		token = getToken();
 		if (isTokenNotAlphaNumOrReserved(token))
@@ -480,6 +495,8 @@ std::vector<FunOrProcAST> parseFunOrProcs() {
 		token = getToken();
 		if (!isTokenInteger(token))
 			goto err;
+
+		forp.type = INT;
 
 		token = getToken();
 		if (!isTokenSemicolon(token))

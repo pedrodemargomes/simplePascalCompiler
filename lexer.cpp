@@ -547,6 +547,7 @@ int main(int argc,char *argv[]) {
 	AST ast;
 	ast.program = parseProgram();
 
+	std::cout << "\n; LLVM IR:\n\n";
 
 	// Generate LLVM IR code
 	CodeGenVisitor cgv;

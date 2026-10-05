@@ -17,12 +17,24 @@
 #include "llvm/IR/Verifier.h"
 #include <map>
 
+struct LLVMSymbolTableEntry {
+	llvm::AllocaInst *var;
+	llvm::Argument *arg;
+	llvm::Function *fun;
+	std::string name;
+	enum VarType type;
+	int scope = -10;
+};
+
 class CodeGenVisitor {
 	public:
 	std::unique_ptr<llvm::LLVMContext> theContext;
 	std::unique_ptr<llvm::Module> theModule;
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	std::map<std::string, llvm::GlobalVariable *> globalVars;
+	// Global scope counter
+	int scope = 0;
+	std::list<struct LLVMSymbolTableEntry> symbolTable;
 	llvm::FunctionCallee printfFunc;
 	llvm::Value *formatStr;
 
@@ -30,7 +42,12 @@ class CodeGenVisitor {
 	void visit(ProgramAST &programAST);
 	void visit(CodeBlockAST &codeBlockAST);
 	void visit(StatementAST &statementAST);
+	void visit(FunOrProcAST &funOrProcAST);
 	llvm::Value *visit(ExpressionAST &expressionAST);
+
+	int addSymbolTableEntry(struct LLVMSymbolTableEntry &s);
+	int removeAllFromCurrentScope();
+	struct LLVMSymbolTableEntry *getVarFromSymbolTable(std::string name);
 };
 
 #endif

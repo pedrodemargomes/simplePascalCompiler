@@ -1,5 +1,31 @@
 #include "codeGenVisitor.hpp"
 
+int CodeGenVisitor::removeAllFromCurrentScope() {
+	for (auto it = symbolTable.begin(); it != symbolTable.end();) {
+		if (it->scope == scope)
+			it = symbolTable.erase(it);
+		else
+			++it;
+	}
+	return 0;
+}
+
+int CodeGenVisitor::addSymbolTableEntry(struct LLVMSymbolTableEntry &s) {
+	for (auto &it : symbolTable) {
+		if (it.name == s.name && it.scope == s.scope)
+			return 1;
+	}
+	symbolTable.push_back(s);
+	return 0;
+}
+
+struct LLVMSymbolTableEntry *CodeGenVisitor::getVarFromSymbolTable(std::string name) {
+	for (auto it = symbolTable.rbegin(); it != symbolTable.rend(); ++it) {
+		if (it->name == name)
+			return &*it;
+	}
+	return NULL;
+}
 
 CodeGenVisitor::CodeGenVisitor() {
 	theContext = std::make_unique<llvm::LLVMContext>();
@@ -12,13 +38,43 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 	L = R = ret = NULL;
 	
 	if (expressionAST.operation == VARIABLE) {
-		L = builder->CreateLoad(
-			llvm::Type::getInt32Ty(*theContext),
-			globalVars[expressionAST.var],	"L");
+		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(expressionAST.var);
+		if (s) {
+			if (s->var)
+				L = builder->CreateLoad(
+					llvm::Type::getInt32Ty(*theContext),
+					s->var, "L");
+			else if (s->arg)
+				L = builder->CreateLoad(
+					llvm::Type::getInt32Ty(*theContext),
+					s->arg, "L");
+		} else if (globalVars.contains(expressionAST.var)) {
+			L = builder->CreateLoad(
+				llvm::Type::getInt32Ty(*theContext),
+				globalVars[expressionAST.var], "L");
+		} else {
+			std::cout << "Variable" << expressionAST.var << " not found\n";
+		}
+
 		return L;
 	} else if (expressionAST.operation == LITERAL) {
 		L = builder->getInt32(expressionAST.intLiteral);
 		return L;
+	} else if (expressionAST.operation == FUN_OR_PROC) {
+		// Call function or procedure
+		std::cout << "FUNTION CALL: " << expressionAST.var << "\n";
+		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(expressionAST.var);
+		if (!s) {
+			std::cout << "getVarFromSymbolTable error var name: " << expressionAST.var << "\n";
+			return NULL;
+		}
+		std::vector<llvm::Value *> argsv;
+		for (auto &it : expressionAST.args) {
+			llvm::Value *v = visit(it);
+			argsv.push_back(v);
+		}
+
+		return builder->CreateCall(s->fun, argsv, "funcall");
 	}
 
 	L = this->visit(*expressionAST.expressionLeft);
@@ -61,7 +117,16 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 void CodeGenVisitor::visit(StatementAST &statementAST) {
 	if (statementAST.attribution) {
 		llvm::Value *v = this->visit(*statementAST.attribution->expression);
-		builder->CreateStore(v, globalVars[statementAST.attribution->var]);
+		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(statementAST.attribution->var);
+		if (s) {
+			if (s->var)
+				builder->CreateStore(v, s->var);
+			else if (s->arg)
+				builder->CreateStore(v, s->arg);
+		} else if (globalVars.contains(statementAST.attribution->var))
+			builder->CreateStore(v, globalVars[statementAST.attribution->var]);
+		else
+			std::cout << "Variable " << statementAST.attribution->var << " no found\n";
 	} else if (statementAST.conditional) {
 		llvm::Function *fun = builder->GetInsertBlock()->getParent();
 		llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*theContext, "then", fun);
@@ -128,15 +193,98 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 }
 
 void CodeGenVisitor::visit(CodeBlockAST &codeBlockAST) {
+	std::cout << "CODEBLOCK\n";
 	for (auto &it : codeBlockAST.statements) {
 		this->visit(it);
 	}
 }
 
+
+void CodeGenVisitor::visit(FunOrProcAST &fop) {
+	std::cout << "fop.name: " << fop.name << "\n";
+	// Generate function code
+	std::vector<llvm::Type *> argsType;
+	for (auto &it : fop.args) {
+		if (it.type == INT) {
+			if (!it.isRef)
+				argsType.push_back(llvm::Type::getInt32Ty(*theContext));
+			else
+				argsType.push_back(llvm::PointerType::getUnqual(*theContext));
+		}
+	}
+	llvm::FunctionType *funType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*theContext), argsType, false);
+	llvm::Function *fun = llvm::Function::Create(funType, llvm::Function::ExternalLinkage, fop.name, theModule.get());
+	llvm::BasicBlock *entry = llvm::BasicBlock::Create(*theContext, "entryFun", fun);
+
+	builder->SetInsertPoint(entry);
+
+	struct LLVMSymbolTableEntry sfun = {
+		.var = NULL,
+		.arg = NULL,
+		.fun = fun,
+		.name = fop.name,
+		.type = FUNCTION,
+		.scope = this->scope
+	};
+	addSymbolTableEntry(sfun);
+	
+	llvm::Type *Int32Ty = llvm::Type::getInt32Ty(*theContext);
+	llvm::AllocaInst *ret = builder->CreateAlloca(Int32Ty, nullptr, "ret");
+	struct LLVMSymbolTableEntry sret = {
+		.var = NULL,
+		.arg = NULL,
+		.fun = NULL,
+		.name = fop.name,
+		.type = INT,
+		.scope = this->scope+1
+	};
+	addSymbolTableEntry(sret);
+
+	auto itargs = fop.args.begin();
+	for (auto &it : fun->args()) {
+		struct LLVMSymbolTableEntry s = {
+			.var = NULL,
+			.arg = &it,
+			.name = std::string(itargs->name),
+			.type = INT,
+			.scope = this->scope+1
+		};
+		addSymbolTableEntry(s);
+		itargs++;
+	}
+
+
+	for (auto &it : fop.vars) {
+		// TODO: Support other types
+		llvm::Type *Int32Ty = llvm::Type::getInt32Ty(*theContext);
+		llvm::AllocaInst *var = builder->CreateAlloca(Int32Ty, nullptr, it.name);
+		struct LLVMSymbolTableEntry s = {
+			.var = var,
+			.arg = NULL,
+			.name = it.name,
+			.type = INT,
+			.scope = this->scope+1
+		};
+		addSymbolTableEntry(s);
+	}
+
+	this->scope++;
+	std::cout << "BEGIN FUN CODEBLOCK\n";
+	this->visit(*fop.codeBlock);
+	std::cout << "END FUN CODEBLOCK\n";
+	removeAllFromCurrentScope();
+	this->scope--;
+
+	llvm::Value *r = builder->CreateLoad(
+		llvm::Type::getInt32Ty(*theContext),
+		ret, "loadRet");
+	builder->CreateRet(r);
+}
+
 void CodeGenVisitor::visit(ProgramAST &programAST) {
 	llvm::FunctionType *mainType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*theContext), false);
 	llvm::Function *main = llvm::Function::Create(mainType, llvm::Function::ExternalLinkage, "main", theModule.get());
-	llvm::BasicBlock* entry = llvm::BasicBlock::Create(*theContext, "entry", main);
+	llvm::BasicBlock *entry = llvm::BasicBlock::Create(*theContext, "entry", main);
 
 	builder->SetInsertPoint(entry);
 
@@ -157,14 +305,18 @@ void CodeGenVisitor::visit(ProgramAST &programAST) {
 			it.name);
 		gvar->setAlignment(llvm::Align(4));
 		globalVars[it.name] = gvar;
-
 	}
+
+	for (auto &it : programAST.funOrProcs)
+		this->visit(it);
+
+	builder->SetInsertPoint(entry);
+
 	this->visit(*programAST.codeBlock);
 
 	builder->CreateRet(llvm::ConstantInt::get(
 		llvm::Type::getInt32Ty(*theContext), 0));
 
-	std::cout << "\n; LLVM IR:\n\n";
 	theModule->print(llvm::outs(), nullptr);
 }
 

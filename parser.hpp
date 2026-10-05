@@ -55,6 +55,7 @@ class ExpressionAST {
 				i.print();
 				std::cout << " , ";
 			}
+			std::cout << " )";
 			return;
 		}
 		if (operation == VARIABLE) {
@@ -121,7 +122,7 @@ class WriteLnAST {
 		std::cout << "; ";
 		std::cout << "writeln( ";
 		expression->print();
-		std::cout << ") ";
+		std::cout << ")\n";
 	}
 };
 
@@ -200,10 +201,33 @@ class ArgumentAST {
 
 class FunOrProcAST {
 	public:
+	bool isFun;
+	enum VarType type;
 	std::string name;
 	std::vector<ArgumentAST> args;
 	std::vector<VariablesAST> vars;
 	std::unique_ptr<CodeBlockAST> codeBlock;
+	void print() {
+		std::cout << "\n\n";
+		if (isFun)
+			std::cout << "; function " << name << "(";
+		else
+			std::cout << "; procedure " << name << "(";
+		for (auto &it : args)
+			std::cout << it.name << "(isRef: " << it.isRef << "), ";
+		std::cout << ") : ";
+		if (type == INT)
+			std::cout << "INTEGER\n";
+		else
+			std::cout << "NONE\n";
+		std::cout << "; BEGIN\n";
+		std::cout << "; vars:\n";
+		for (auto &it : vars) {
+			std::cout << ";	" << it.name << " " << it.type << "\n";
+		}
+		codeBlock->print();
+		std::cout << "; END\n\n";
+	}
 };
 
 class ProgramAST {
@@ -218,6 +242,8 @@ class ProgramAST {
 		for (auto &it : vars) {
 			std::cout << ";	" << it.name << " " << it.type << "\n";
 		}
+		for (auto &it : funOrProcs)
+			it.print();
 		codeBlock->print();
 	}
 };
@@ -227,7 +253,6 @@ std::vector<VariablesAST> parseVars();
 std::unique_ptr<CodeBlockAST> parseCodeBlock();
 StatementAST parseStatement();
 std::unique_ptr<ProgramAST> parseProgram();
-
 std::unique_ptr<ExpressionAST> parseExpression(std::function<bool(struct Token &)> endExpr);
 
 #endif
