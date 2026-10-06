@@ -47,7 +47,7 @@ class CodeGenVisitor {
 
 	int addSymbolTableEntry(struct LLVMSymbolTableEntry &s);
 	int removeAllFromCurrentScope();
-	struct LLVMSymbolTableEntry *getVarFromSymbolTable(std::string name);
+	struct LLVMSymbolTableEntry *getVarFromSymbolTable(std::string name, bool isFun);
 };
 
 #endif

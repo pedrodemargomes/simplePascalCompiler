@@ -19,9 +19,9 @@ int CodeGenVisitor::addSymbolTableEntry(struct LLVMSymbolTableEntry &s) {
 	return 0;
 }
 
-struct LLVMSymbolTableEntry *CodeGenVisitor::getVarFromSymbolTable(std::string name) {
+struct LLVMSymbolTableEntry *CodeGenVisitor::getVarFromSymbolTable(std::string name, bool isFunction) {
 	for (auto it = symbolTable.rbegin(); it != symbolTable.rend(); ++it) {
-		if (it->name == name)
+		if (it->name == name && (!isFunction || it->type == FUNCTION))
 			return &*it;
 	}
 	return NULL;
@@ -38,7 +38,7 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 	L = R = ret = NULL;
 	
 	if (expressionAST.operation == VARIABLE) {
-		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(expressionAST.var);
+		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(expressionAST.var, false);
 		if (s) {
 			if (s->var)
 				L = builder->CreateLoad(
@@ -63,7 +63,7 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 	} else if (expressionAST.operation == FUN_OR_PROC) {
 		// Call function or procedure
 		std::cout << "FUNTION CALL: " << expressionAST.var << "\n";
-		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(expressionAST.var);
+		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(expressionAST.var, true);
 		if (!s) {
 			std::cout << "getVarFromSymbolTable error var name: " << expressionAST.var << "\n";
 			return NULL;
@@ -117,7 +117,7 @@ llvm::Value *CodeGenVisitor::visit(ExpressionAST &expressionAST) {
 void CodeGenVisitor::visit(StatementAST &statementAST) {
 	if (statementAST.attribution) {
 		llvm::Value *v = this->visit(*statementAST.attribution->expression);
-		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(statementAST.attribution->var);
+		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(statementAST.attribution->var, false);
 		if (s) {
 			if (s->var)
 				builder->CreateStore(v, s->var);
@@ -242,7 +242,7 @@ void CodeGenVisitor::visit(FunOrProcAST &fop) {
 
 	auto itargs = fop.args.begin();
 	for (auto &it : fun->args()) {
-		if (!itargs.isRef) {
+		if (!itargs->isRef) {
 			llvm::Type *Int32Ty = llvm::Type::getInt32Ty(*theContext);
 			llvm::AllocaInst *var = builder->CreateAlloca(Int32Ty, nullptr, std::string(itargs->name));
 			builder->CreateStore(&it, var);
