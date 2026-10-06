@@ -186,6 +186,20 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 	} else if (statementAST.writeLn) {
 		llvm::Value *v = this->visit(*statementAST.writeLn->expression);
 		builder->CreateCall(printfFunc, {formatStr, v});
+	} else if (statementAST.funCall) { 
+		// Call function or procedure
+		struct LLVMSymbolTableEntry *s = getVarFromSymbolTable(statementAST.funCall->var, true);
+		if (!s) {
+			std::cout << "getVarFromSymbolTable error var name: " << statementAST.funCall->var << "\n";
+		}
+		std::vector<llvm::Value *> argsv;
+		for (auto &it : statementAST.funCall->args) {
+			llvm::Value *v = visit(it);
+			argsv.push_back(v);
+		}
+
+		builder->CreateCall(s->fun, argsv, "funcall");
+
 	} else {
 		std::cout << "Error CodeGen invalid statement\n";
 	}
@@ -193,7 +207,6 @@ void CodeGenVisitor::visit(StatementAST &statementAST) {
 }
 
 void CodeGenVisitor::visit(CodeBlockAST &codeBlockAST) {
-	std::cout << "CODEBLOCK\n";
 	for (auto &it : codeBlockAST.statements) {
 		this->visit(it);
 	}
@@ -201,7 +214,6 @@ void CodeGenVisitor::visit(CodeBlockAST &codeBlockAST) {
 
 
 void CodeGenVisitor::visit(FunOrProcAST &fop) {
-	std::cout << "fop.name: " << fop.name << "\n";
 	// Generate function code
 	std::vector<llvm::Type *> argsType;
 	for (auto &it : fop.args) {
@@ -278,9 +290,7 @@ void CodeGenVisitor::visit(FunOrProcAST &fop) {
 	}
 
 	this->scope++;
-	std::cout << "BEGIN FUN CODEBLOCK\n";
 	this->visit(*fop.codeBlock);
-	std::cout << "END FUN CODEBLOCK\n";
 	removeAllFromCurrentScope();
 	this->scope--;
 

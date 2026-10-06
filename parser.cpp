@@ -359,25 +359,47 @@ StatementAST parseStatement() {
 				goto err;
 			token = getToken(); // Consume )
 		} else {
-			// Attribution
 			if (isTokenAlphaNumReserved(token))
 				goto err;
 
 			std::string varName = token.str;
 
 			token = getToken();
-			if (!isTokenAttribution(token))
-				goto err;
+			if (isTokenAttribution(token)) {
+				// Attribution
+				statementAST.attribution = std::make_unique<AttributionAST>();
+				statementAST.attribution->var = varName;
+				struct SymbolTableEntry *s = getVarFromSymbolTable(varName);
+				if (!s) {
+					std::cout << "getVarFromSymbolTable error var name: " << varName << "\n";
+					goto err;
+				}
+				token = getToken();
+				statementAST.attribution->expression = parseExpression(isTokenSemicolon);
+			} else if (isTokenOpenParenthesis(token)) {
+				// Function call
+				statementAST.funCall = std::make_unique<ExpressionAST>();
+				statementAST.funCall->var = varName;
+				statementAST.funCall->operation = FUN_OR_PROC;
+				struct SymbolTableEntry *s = getVarFromSymbolTable(varName);
+				if (!s) {
+					std::cout << "getVarFromSymbolTable error var name: " << varName << "\n";
+					goto err;
+				}
+				// Read args
+				token = getToken();
+				while (!isTokenCloseParenthesis(token)) {
+					std::unique_ptr<ExpressionAST> expr = parseExpression(isTokenCloseParenthesis);
 
-			statementAST.attribution = std::make_unique<AttributionAST>();
-			statementAST.attribution->var = varName;
-			struct SymbolTableEntry *s = getVarFromSymbolTable(varName);
-			if (!s) {
-				std::cout << "getVarFromSymbolTable error var name: " << varName << "\n";
-				goto err;
+					statementAST.funCall->args.emplace_back(std::move(*expr));
+
+					if (isTokenComma(token)) {
+						token = getToken();
+						continue;
+					}
+				}
+				token = getToken();
 			}
-			token = getToken();
-			statementAST.attribution->expression = parseExpression(isTokenSemicolon);
 		}
 	} else
 		goto err;

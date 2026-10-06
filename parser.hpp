@@ -133,6 +133,7 @@ class StatementAST {
 	std::unique_ptr<ConditionalAST> conditional;
 	std::unique_ptr<WhileLoopAST> whileLoop;
 	std::unique_ptr<WriteLnAST> writeLn;
+	std::unique_ptr<ExpressionAST> funCall;
 	void print();
 };
 
