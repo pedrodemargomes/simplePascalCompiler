@@ -231,7 +231,7 @@ void CodeGenVisitor::visit(FunOrProcAST &fop) {
 	llvm::Type *Int32Ty = llvm::Type::getInt32Ty(*theContext);
 	llvm::AllocaInst *ret = builder->CreateAlloca(Int32Ty, nullptr, "ret");
 	struct LLVMSymbolTableEntry sret = {
-		.var = NULL,
+		.var = ret,
 		.arg = NULL,
 		.fun = NULL,
 		.name = fop.name,
@@ -242,14 +242,23 @@ void CodeGenVisitor::visit(FunOrProcAST &fop) {
 
 	auto itargs = fop.args.begin();
 	for (auto &it : fun->args()) {
-		struct LLVMSymbolTableEntry s = {
-			.var = NULL,
-			.arg = &it,
-			.name = std::string(itargs->name),
-			.type = INT,
-			.scope = this->scope+1
-		};
-		addSymbolTableEntry(s);
+		if (!itargs.isRef) {
+			llvm::Type *Int32Ty = llvm::Type::getInt32Ty(*theContext);
+			llvm::AllocaInst *var = builder->CreateAlloca(Int32Ty, nullptr, std::string(itargs->name));
+			builder->CreateStore(&it, var);
+			struct LLVMSymbolTableEntry s = {
+				.var = var,
+				.arg = NULL,
+				.fun = NULL,
+				.name = std::string(itargs->name),
+				.type = INT,
+				.scope = this->scope+1
+			};
+			addSymbolTableEntry(s);
+		} else {
+			std::cout << "Pass by reference\n";
+
+		}
 		itargs++;
 	}
 
